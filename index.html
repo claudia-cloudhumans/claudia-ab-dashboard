@@ -586,7 +586,7 @@ let auditFilter = 'all';
 let retChart = null, volChart = null, coverChart = null;
 
 // ── CLIENTS ──────────────────────────────────────────────────────────────────
-const CLIENTS = Object.keys(allData).sort();
+// populated after fetch resolves — see initDashboard()
 const LABELS = {
   arquivei:'Arquivei', bocarosa:'Boca Rosa', crmbonus:'CRMBonus',
   evinoemail:'Evino Email', lia:'LIA', linus:'Linus',
@@ -595,12 +595,6 @@ const LABELS = {
 };
 
 const sel = document.getElementById('clientSelect');
-CLIENTS.forEach(c => {
-  const o = document.createElement('option');
-  o.value = c; o.textContent = LABELS[c] || c;
-  sel.appendChild(o);
-});
-sel.value = 'sunne';
 sel.addEventListener('change', () => { currentClient = sel.value; render(); });
 document.getElementById('dateStart').addEventListener('change', render);
 document.getElementById('dateEnd').addEventListener('change', render);
@@ -844,9 +838,18 @@ function renderAuditTable() {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function initDashboard() {
-currentClient = 'sunne';
-sel.value = 'sunne';
-render();
+  // populate client dropdown from loaded data
+  const clients = Object.keys(allData).sort();
+  sel.innerHTML = '';
+  clients.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = LABELS[c] || c;
+    sel.appendChild(o);
+  });
+  // default to sunne if available, otherwise first client
+  sel.value = clients.includes('sunne') ? 'sunne' : clients[0];
+  currentClient = sel.value;
+  render();
 }
 </script>
 </body>
