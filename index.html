@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Agente · Visão Micro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<style>
+:root {
+  --bg: #0d0f18;
+  --surface: #141720;
+  --surface2: #1e2235;
+  --surface3: #252a40;
+  --border: #2a2f45;
+  --accent: #7c6bff;
+  --accent-glow: rgba(124,107,255,.25);
+  --accent2: #4fd9aa;
+  --accent2-glow: rgba(79,217,170,.2);
+  --warn: #f4a636;
+  --danger: #f46262;
+  --text: #e8eaf0;
+  --muted: #7a839e;
+  --card-radius: 14px;
+  --transition: 200ms cubic-bezier(.4,0,.2,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ── SCROLLBAR ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 15px 32px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  backdrop-filter: blur(10px);
+}
+.header-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.logo {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, #7c6bff 0%, #a78bfa 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px; color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(124,107,255,.35);
+}
+header h1 { font-size: 15px; font-weight: 700; flex: 1; letter-spacing: -.3px; }
+header span { font-size: 11px; color: var(--muted); }
+
+/* ── CONTROLS ───────────────────────────────────────────────── */
+.controls {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 32px;
+}
+.controls-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+  justify-content: center;
+}
+.control-group { display: flex; flex-direction: column; gap: 5px; }
+.control-group label {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .7px;
+}
+select, input[type=date] {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  outline: none;
+  min-width: 155px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+select:hover, input[type=date]:hover { border-color: var(--accent); }
+select:focus, input[type=date]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ── MAIN ───────────────────────────────────────────────────── */
+.main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
+
+/* ── INFO BAR ───────────────────────────────────────────────── */
+.info-bar {
+  background: linear-gradient(90deg, rgba(124,107,255,.07) 0%, rgba(79,217,170,.05) 100%);
+  border: 1px solid rgba(124,107,255,.18);
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 11.5px;
+  color: #b0aaff;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+  line-height: 1.5;
+}
+
+/* ── KPI CARDS ──────────────────────────────────────────────── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 18px 18px 16px;
+  position: relative;
+  overflow: visible;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  animation: fadeUp .35s ease both;
+}
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  border-color: rgba(124,107,255,.3);
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+  background: var(--accent);
+  transition: opacity var(--transition);
+}
+.kpi-card.warn::before { background: var(--warn); }
+.kpi-card.danger::before { background: var(--danger); }
+.kpi-card.good::before { background: var(--accent2); }
+.kpi-label {
+  font-size: 10px; font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase; letter-spacing: .6px;
+  margin-bottom: 6px; padding-right: 26px;
+}
+.kpi-value { font-size: 26px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+.kpi-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ── CHARTS ─────────────────────────────────────────────────── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+@media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 20px;
+  position: relative;
+  overflow: visible;
+  transition: box-shadow var(--transition), border-color var(--transition);
+  animation: fadeUp .4s ease both;
+}
+.chart-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.25); border-color: rgba(124,107,255,.2); }
+.chart-card.full { grid-column: 1 / -1; }
+.chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+.chart-title-block {}
+.chart-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.chart-subtitle { font-size: 11px; color: var(--muted); }
+.chart-wrap { position: relative; height: 230px; }
+.chart-wrap.tall { height: 290px; }
+.legend-row { display: flex; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── HELP TOOLTIP ───────────────────────────────────────────── */
+.help-btn {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  cursor: default;
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+  z-index: 50;
+}
+.help-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface3); }
+.help-btn .tip {
+  display: none;
+  position: absolute;
+  right: 0; top: 26px;
+  width: 240px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 11px; font-weight: 400;
+  color: var(--text); line-height: 1.55;
+  box-shadow: 0 12px 32px rgba(0,0,0,.5);
+  z-index: 999;
+  white-space: normal;
+  animation: tipIn .15s ease;
+}
+@keyframes tipIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform: translateY(0); } }
+.help-btn:hover .tip { display: block; }
+.kpi-card .help-btn { position: absolute; top: 14px; right: 14px; }
+.kpi-card .help-btn .tip { right: 0; }
+
+/* ── PERIOD INPUTS ──────────────────────────────────────────── */
+.period-inputs-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.period-input-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  flex: 1;
+  min-width: 260px;
+  transition: border-color var(--transition);
+}
+.period-block-a { border-left: 3px solid var(--muted); }
+.period-block-b { border-left: 3px solid var(--accent); }
+.period-block-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: var(--muted);
+}
+.period-block-b .period-block-label { color: var(--accent); }
+.period-date-pair {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.period-date-input {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  outline: none;
+  min-width: 130px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.period-date-input:hover { border-color: var(--accent); }
+.period-date-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.period-date-sep { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* ── PERIOD TABLE ───────────────────────────────────────────── */
+.period-compare {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 20px;
+  margin-bottom: 22px;
+  position: relative;
+  overflow: visible;
+  animation: fadeUp .45s ease both;
+}
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.section-header h3 { font-size: 13px; font-weight: 700; margin: 0; flex: 1; }
+.period-table { width: 100%; border-collapse: collapse; }
+.period-table th {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left;
+}
+.period-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: 12px; vertical-align: middle;
+  transition: background var(--transition);
+}
+.period-table tr:last-child td { border-bottom: none; }
+.period-table tbody tr:hover td { background: rgba(255,255,255,.025); }
+.badge {
+  display: inline-block; padding: 3px 9px;
+  border-radius: 6px; font-size: 10px; font-weight: 700; white-space: nowrap;
+  transition: opacity var(--transition);
+}
+.badge.good { background: rgba(79,217,170,.15); color: var(--accent2); }
+.badge.bad { background: rgba(244,98,98,.15); color: var(--danger); }
+.badge.neutral { background: rgba(122,131,158,.12); color: var(--muted); }
+.badge.n1 { background: rgba(79,217,170,.15); color: var(--accent2); }
+.badge.n2 { background: rgba(244,98,98,.15); color: var(--danger); }
+
+/* ── AUDIT TABLE ────────────────────────────────────────────── */
+.audit-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 20px;
+  margin-bottom: 22px;
+  overflow: visible;
+  animation: fadeUp .5s ease both;
+}
+.audit-subtitle { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+.audit-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.audit-filter-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 7px;
+  padding: 5px 13px;
+  font-size: 11px; font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.audit-filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.audit-filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.audit-filter-btn.n1-btn.active { background: var(--accent2); border-color: var(--accent2); color: #0d1a14; }
+.audit-filter-btn.n2-btn.active { background: var(--danger); border-color: var(--danger); color: #fff; }
+.audit-count { font-size: 11px; color: var(--muted); margin-left: auto; }
+.audit-table-wrap { overflow-x: auto; border-radius: 10px; }
+.audit-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+.audit-table th {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 9px 14px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap;
+  background: var(--surface2);
+}
+.audit-table th:first-child { border-radius: 8px 0 0 0; }
+.audit-table th:last-child { border-radius: 0 8px 0 0; }
+.audit-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: 12px; vertical-align: middle;
+  transition: background var(--transition);
+}
+.audit-table tr:last-child td { border-bottom: none; }
+.audit-table tbody tr { transition: background var(--transition); }
+.audit-table tbody tr:hover td { background: rgba(124,107,255,.06); }
+.ticket-id {
+  font-family: 'Poppins', monospace;
+  font-weight: 700; font-size: 12px;
+  color: var(--muted);
+}
+.hub-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(124,107,255,.12);
+  border: 1px solid rgba(124,107,255,.25);
+  color: var(--accent);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 11px; font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  text-decoration: none;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  white-space: nowrap;
+}
+.hub-btn:hover {
+  background: rgba(124,107,255,.22);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124,107,255,.2);
+}
+.hub-btn:active { transform: translateY(0); }
+.hub-btn svg { flex-shrink: 0; }
+.no-url { color: var(--muted); font-size: 11px; }
+
+/* ── ANIMATIONS ─────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── EMPTY STATE ────────────────────────────────────────────── */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty-state .icon { font-size: 38px; margin-bottom: 10px; }
+.empty-state p { font-size: 13px; }
+.audit-empty { text-align: center; padding: 36px 20px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <span>A/B Testing · Análise por cliente · AgenticResponse</span>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="controls-inner">
+    <div class="control-group">
+      <label>Cliente</label>
+      <select id="clientSelect"></select>
+    </div>
+    <div class="control-group">
+      <label>Data início</label>
+      <input type="date" id="dateStart" value="2026-02-13">
+    </div>
+    <div class="control-group">
+      <label>Data fim</label>
+      <input type="date" id="dateEnd" value="2026-04-09">
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="info-bar">
+    Os gráficos mostram <strong>duas visões simultâneas</strong>: todos os tickets do grupo agêntico (roxo) e somente onde o multi-agente respondeu de fato (verde). A diferença entre elas é o gap de cobertura.
+  </div>
+
+  <div class="kpi-row" id="kpiRow">
+    <div class="empty-state"><p>Selecione um cliente para visualizar</p></div>
+  </div>
+
+  <div class="chart-grid" id="chartGrid" style="display:none">
+
+    <div class="chart-card full">
+      <div class="chart-header">
+        <div class="chart-title-block">
+          <div class="chart-title">Retenção diária (%)</div>
+          <div class="chart-subtitle">Tickets não escalados para N2 · grupo vs. atuação real</div>
+        </div>
+        <div class="help-btn" style="position:relative;top:auto;right:auto;margin-left:8px;flex-shrink:0">?
+          <span class="tip"><strong style="color:#7c6bff">Grupo (roxo)</strong>: retenção de todos os tickets com ab_key agêntico — inclui IDS, TypeBot e AgenticResponse.<br><br><strong style="color:#4fd9aa">AgenticResponse (verde)</strong>: apenas tickets onde o multi-agente respondeu de fato. Métrica real de qualidade do agente.</span>
+        </div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-item"><div class="legend-dot" style="background:#7c6bff"></div>Todos do grupo agêntico</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4fd9aa"></div>Só AgenticResponse (atuação real)</div>
+      </div>
+      <div class="chart-wrap tall"><canvas id="retChart"></canvas></div>
+    </div>
+
+    <div class="chart-card full">
+      <div class="chart-header">
+        <div class="chart-title-block">
+          <div class="chart-title">Volume diário de tickets</div>
+          <div class="chart-subtitle">Acionamentos pelo juiz vs. atuações reais do AgenticResponse</div>
+        </div>
+        <div class="help-btn" style="position:relative;top:auto;right:auto;margin-left:8px;flex-shrink:0">?
+          <span class="tip"><strong>Barras roxas</strong>: tickets que o juiz direcionou ao grupo agêntico.<br><br><strong>Barras verdes</strong>: desses, quantos tiveram resposta real do AgenticResponse.<br><br>A diferença entre as barras é o gap de cobertura diário — tickets onde o juiz avaliou mas o agente não chegou a responder.</span>
+        </div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-item"><div class="legend-dot" style="background:#7c6bff"></div>Acionamentos pelo juiz</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4fd9aa"></div>Atuações reais (AgenticResponse)</div>
+      </div>
+      <div class="chart-wrap tall"><canvas id="volChart"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- Period Comparison -->
+  <div class="period-compare" id="periodCompare" style="display:none">
+    <div class="section-header">
+      <h3>Comparação de períodos</h3>
+      <div class="help-btn">?
+        <span class="tip">Defina intervalos independentes para Período A e Período B. A tabela compara as métricas entre os dois e o badge mostra a variação em pontos percentuais (pp) na retenção.</span>
+      </div>
+    </div>
+    <div class="period-inputs-row">
+      <div class="period-input-block period-block-a">
+        <span class="period-block-label">Período A</span>
+        <div class="period-date-pair">
+          <input type="date" id="compAStart" class="period-date-input">
+          <span class="period-date-sep">até</span>
+          <input type="date" id="compAEnd" class="period-date-input">
+        </div>
+      </div>
+      <div class="period-input-block period-block-b">
+        <span class="period-block-label">Período B</span>
+        <div class="period-date-pair">
+          <input type="date" id="compBStart" class="period-date-input">
+          <span class="period-date-sep">até</span>
+          <input type="date" id="compBEnd" class="period-date-input">
+        </div>
+      </div>
+    </div>
+    <table class="period-table" id="periodTable" style="display:none">
+      <thead>
+        <tr>
+          <th>Período</th>
+          <th>Total (grupo)</th>
+          <th>Retenção grupo</th>
+          <th>Tickets c/ AgenticResp.</th>
+          <th>Retenção AgenticResp.</th>
+          <th>Cobertura</th>
+          <th>Variação</th>
+        </tr>
+      </thead>
+      <tbody id="periodTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Ticket Audit -->
+  <div class="audit-section" id="auditSection" style="display:none">
+    <div class="section-header">
+      <h3>Auditoria de tickets com AgenticResponse</h3>
+      <div class="help-btn">?
+        <span class="tip">Tickets onde o multi-agente efetivamente respondeu ao usuário. Clique em "Abrir no Hub" para acessar a conversa completa no CloudChat. O link está disponível para clientes com account_id mapeado (Sunne, Linus, Boca Rosa).</span>
+      </div>
+    </div>
+    <div class="audit-subtitle" id="auditSubtitle"></div>
+    <div class="audit-filters">
+      <button class="audit-filter-btn active" onclick="setAuditFilter('all', this)">Todos</button>
+      <button class="audit-filter-btn n1-btn" onclick="setAuditFilter('n1', this)">Retidos N1</button>
+      <button class="audit-filter-btn n2-btn" onclick="setAuditFilter('n2', this)">Escalados N2</button>
+      <span class="audit-count" id="auditCount"></span>
+    </div>
+    <div class="audit-table-wrap">
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Data</th>
+            <th>Grupo A/B</th>
+            <th>Retenção</th>
+            <th>Acesso no Hub</th>
+          </tr>
+        </thead>
+        <tbody id="auditTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DADOS (carregados de data.json) ─────────────────────────────────────────
+let allData = {}, agenticData = {}, baseData = {}, ticketsData = {};
+let _dataReady = false;
+
+fetch('data.json')
+  .then(r => { if (!r.ok) throw new Error('data.json not found'); return r.json(); })
+  .then(d => {
+    allData      = d.allData      || {};
+    agenticData  = d.agenticData  || {};
+    baseData     = d.baseData     || {};
+    ticketsData  = d.ticketsData  || {};
+    _dataReady   = true;
+    initDashboard();
+  })
+  .catch(err => {
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Poppins,sans-serif;color:#7a839e;flex-direction:column;gap:12px"><p style="font-size:14px">Não foi possível carregar os dados.</p><code style="font-size:11px;color:#f46262">' + err.message + '</code></div>';
+  });
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let currentClient = null;
+let auditFilter = 'all';
+let retChart = null, volChart = null, coverChart = null;
+
+// ── CLIENTS ──────────────────────────────────────────────────────────────────
+const CLIENTS = Object.keys(allData).sort();
+const LABELS = {
+  arquivei:'Arquivei', bocarosa:'Boca Rosa', crmbonus:'CRMBonus',
+  evinoemail:'Evino Email', lia:'LIA', linus:'Linus',
+  printisuporte:'Printi Suporte', sunne:'Sunne', vivastays:'Viva Stays',
+  whitebook:'Whitebook', zerezesv2:'Zerezes v2', zippi:'Zippi'
+};
+
+const sel = document.getElementById('clientSelect');
+CLIENTS.forEach(c => {
+  const o = document.createElement('option');
+  o.value = c; o.textContent = LABELS[c] || c;
+  sel.appendChild(o);
+});
+sel.value = 'sunne';
+sel.addEventListener('change', () => { currentClient = sel.value; render(); });
+document.getElementById('dateStart').addEventListener('change', render);
+document.getElementById('dateEnd').addEventListener('change', render);
+['compAStart','compAEnd','compBStart','compBEnd'].forEach(id =>
+  document.getElementById(id).addEventListener('change', renderPeriodTable)
+);
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const pct = v => isNaN(v) || v === null ? '—' : (v*100).toFixed(1) + '%';
+const fmt = d => { if (!d) return '—'; const [y,m,dy] = d.split('-'); return `${dy}/${m}/${y.slice(2)}`; };
+
+
+function setAuditFilter(f, btn) {
+  auditFilter = f;
+  document.querySelectorAll('.audit-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAuditTable();
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────────
+function render() {
+  currentClient = sel.value;
+  if (!currentClient) return;
+
+  const start = document.getElementById('dateStart').value;
+  const end   = document.getElementById('dateEnd').value;
+
+  const allRows = (allData[currentClient]     || []).filter(r => r.data >= start && r.data <= end);
+  const agRows  = (agenticData[currentClient] || []).filter(r => r.data >= start && r.data <= end);
+
+  const dateSet = new Set([...allRows.map(r => r.data), ...agRows.map(r => r.data)]);
+  const allDates = [...dateSet].sort();
+
+  const allMap = {}; allRows.forEach(r => allMap[r.data] = r);
+  const agMap  = {}; agRows.forEach(r => agMap[r.data] = r);
+
+  const retAllValues = allDates.map(d => allMap[d] ? +(allMap[d].retencao*100).toFixed(1) : null);
+  const retAgValues  = allDates.map(d => agMap[d]  ? +(agMap[d].retencao_agentic*100).toFixed(1) : null);
+  const volAllValues = allDates.map(d => allMap[d]?.total ?? 0);
+  const volAgValues  = allDates.map(d => agMap[d]?.total_agentic ?? 0);
+  const coverValues  = allDates.map(d => {
+    const a = allMap[d]?.total || 0, ag = agMap[d]?.total_agentic || 0;
+    return a > 0 ? +((ag/a)*100).toFixed(1) : null;
+  });
+
+  const totalAll  = allRows.reduce((s,r) => s+r.total, 0);
+  const totalAg   = agRows.reduce((s,r) => s+r.total_agentic, 0);
+  const retAll    = totalAll > 0 ? allRows.reduce((s,r) => s+r.retidos,0)/totalAll : 0;
+  const retAg     = totalAg  > 0 ? agRows.reduce((s,r) => s+r.retidos_agentic,0)/totalAg : 0;
+  const coverage  = totalAll > 0 ? totalAg/totalAll : 0;
+  const retDiff   = retAg - retAll;
+
+  // Base group KPIs
+  const baseRows  = (baseData[currentClient] || []).filter(r => r.data >= start && r.data <= end);
+  const totalBase = baseRows.reduce((s,r) => s+r.total_base, 0);
+  const retBase   = totalBase > 0 ? baseRows.reduce((s,r) => s+r.retidos_base, 0) / totalBase : null;
+  const retDiffBase  = retBase !== null ? retAg - retBase : null;
+  const diffSignBase = retDiffBase > 0 ? '+' : '';
+  const diffStyleBase = retDiffBase > .01 ? 'color:var(--accent2)' : retDiffBase < -.01 ? 'color:var(--danger)' : 'color:var(--muted)';
+  const kpiClass  = v => v >= .5 ? 'good' : v >= .35 ? '' : 'danger';
+  const diffSign  = retDiff > 0 ? '+' : '';
+  const diffStyle = retDiff > .01 ? 'color:var(--accent2)' : retDiff < -.01 ? 'color:var(--danger)' : 'color:var(--muted)';
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi-card">
+      <div class="help-btn">?<span class="tip">Volume total de tickets do cliente no período, somando todos os grupos A/B — conversacional (agêntico) + base (TypeBot). Dá o contexto real de quanto do tráfego total do cliente está sendo avaliado pelo multi-agente. A diferença entre este número e os "Julgamentos pelo juiz" é a fatia que foi para o grupo de controle.</span></div>
+      <div class="kpi-label">Total geral (todos A/B)</div>
+      <div class="kpi-value">${(totalAll + totalBase).toLocaleString('pt-BR')}</div>
+      <div class="kpi-sub">${pct(totalAll / (totalAll + totalBase))} no grupo conversacional</div>
+    </div>
+    <div class="kpi-card">
+      <div class="help-btn">?<span class="tip">Total de tickets que o juiz avaliou no grupo agêntico — independente do resultado. Para cada um desses tickets, o juiz fez um julgamento sobre se deveria ou não acionar o multi-agente. Inclui tanto os que receberam AgenticResponse quanto os que foram redirecionados para IDS ou TypeBot.</span></div>
+      <div class="kpi-label">Julgamentos pelo juiz</div>
+      <div class="kpi-value">${totalAll.toLocaleString('pt-BR')}</div>
+      <div class="kpi-sub">Tickets avaliados no período</div>
+    </div>
+    <div class="kpi-card ${coverage < .15 ? 'warn' : 'good'}">
+      <div class="help-btn">?<span class="tip">Cobertura = AgenticResponse ÷ todos do grupo. % dos tickets do grupo onde o agente respondeu de fato. Abaixo de 15% merece atenção.</span></div>
+      <div class="kpi-label">Cobertura</div>
+      <div class="kpi-value">${pct(coverage)}</div>
+      <div class="kpi-sub">${totalAg} de ${totalAll} tickets</div>
+    </div>
+    <div class="kpi-card ${kpiClass(retAll)}">
+      <div class="help-btn">?<span class="tip">Retenção de todos os tickets do grupo agêntico — inclui IDS, TypeBot e AgenticResponse. Mede o impacto geral da configuração para o cliente.</span></div>
+      <div class="kpi-label">Retenção do grupo</div>
+      <div class="kpi-value">${pct(retAll)}</div>
+      <div class="kpi-sub">${totalAll.toLocaleString('pt-BR')} tickets no período</div>
+    </div>
+    <div class="kpi-card ${kpiClass(retAg)}">
+      <div class="help-btn">?<span class="tip">Retenção apenas dos tickets onde o multi-agente respondeu diretamente (AgenticResponse). Métrica real de qualidade do agente.</span></div>
+      <div class="kpi-label">Retenção AgenticResp.</div>
+      <div class="kpi-value">${pct(retAg)}</div>
+      <div class="kpi-sub">${totalAg.toLocaleString('pt-BR')} com atuação real</div>
+    </div>
+    <div class="kpi-card ${retBase!==null?(retDiffBase>.01?'good':retDiffBase<-.01?'danger':'warn'):''}" >
+      <div class="help-btn">?<span class="tip">Comparação direta entre a retenção do multi-agente (AgenticResponse) e o grupo de controle (TypeBot/base). Esta é a métrica mais relevante para avaliar o impacto real do agente, pois compara os dois tratamentos nos mesmos intents. Positivo = agente supera o TypeBot. Negativo = TypeBot ainda retém mais.</span></div>
+      <div class="kpi-label">AgenticResp. vs Controle</div>
+      <div class="kpi-value" style="${retBase!==null?diffStyleBase:'color:var(--muted)'}">${retBase!==null?diffSignBase+(retDiffBase*100).toFixed(1)+'pp':'—'}</div>
+      <div class="kpi-sub">${retBase!==null?'Agente '+pct(retAg)+' · Base '+pct(retBase):'Sem grupo controle'}</div>
+    </div>
+  `;
+
+  document.getElementById('chartGrid').style.display = 'grid';
+
+  const annotations = {};
+
+  const labels = allDates.map(fmt);
+  const base = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'#1e2235', titleColor:'#e8eaf0', bodyColor:'#7a839e',
+        borderColor:'#2a2f45', borderWidth:1, padding:11, cornerRadius:8,
+        titleFont:{family:'Poppins',weight:'600'}, bodyFont:{family:'Poppins'}
+      }
+    },
+    scales:{
+      x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#7a839e', maxTicksLimit:12, font:{size:10,family:'Poppins'}} },
+      y:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#7a839e', font:{size:10,family:'Poppins'}} }
+    }
+  };
+
+  if (retChart) retChart.destroy();
+  retChart = new Chart(document.getElementById('retChart'), {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'Grupo agêntico', data:retAllValues, borderColor:'#7c6bff', backgroundColor:'rgba(124,107,255,.07)', fill:true, tension:.3, pointRadius:retAllValues.length>30?2:4, pointBackgroundColor:'#7c6bff', spanGaps:true, borderWidth:2 },
+      { label:'AgenticResponse', data:retAgValues, borderColor:'#4fd9aa', backgroundColor:'rgba(79,217,170,.05)', fill:true, tension:.3, pointRadius:retAgValues.length>30?2:4, pointBackgroundColor:'#4fd9aa', spanGaps:true, borderWidth:2 }
+    ]},
+    options:{ ...base, plugins:{...base.plugins, annotation:{annotations}}, scales:{ ...base.scales, y:{ ...base.scales.y, min:0, max:100, ticks:{...base.scales.y.ticks, callback:v=>v+'%'}} } }
+  });
+
+  if (volChart) volChart.destroy();
+  volChart = new Chart(document.getElementById('volChart'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'Acionamentos juiz', data:volAllValues, backgroundColor:'rgba(124,107,255,.55)', borderColor:'#7c6bff', borderWidth:1, borderRadius:3 },
+      { label:'AgenticResponse',   data:volAgValues,  backgroundColor:'rgba(79,217,170,.55)',  borderColor:'#4fd9aa', borderWidth:1, borderRadius:3 }
+    ]},
+    options:{ ...base, plugins:{...base.plugins, annotation:{annotations}} }
+  });
+
+  // show period compare section whenever a client is selected
+  document.getElementById('periodCompare').style.display = 'block';
+  renderPeriodTable();
+  renderAuditTable();
+}
+
+// ── PERIOD TABLE ──────────────────────────────────────────────────────────────
+function renderPeriodTable() {
+  const table = document.getElementById('periodTable');
+  const aStart = document.getElementById('compAStart').value;
+  const aEnd   = document.getElementById('compAEnd').value;
+  const bStart = document.getElementById('compBStart').value;
+  const bEnd   = document.getElementById('compBEnd').value;
+
+  const hasA = aStart && aEnd && aStart <= aEnd;
+  const hasB = bStart && bEnd && bStart <= bEnd;
+  if (!hasA && !hasB) { table.style.display = 'none'; return; }
+  table.style.display = 'table';
+
+  if (!currentClient) return;
+  const allRows = allData[currentClient] || [];
+  const agRows  = agenticData[currentClient] || [];
+
+  const calcPeriod = (s, e) => {
+    const pA = allRows.filter(r=>r.data>=s&&r.data<=e);
+    const pG = agRows.filter(r=>r.data>=s&&r.data<=e);
+    const tA = pA.reduce((acc,r)=>acc+r.total,0);
+    const ret = tA>0 ? pA.reduce((acc,r)=>acc+r.retidos,0)/tA : null;
+    const tG = pG.reduce((acc,r)=>acc+r.total_agentic,0);
+    const retG = tG>0 ? pG.reduce((acc,r)=>acc+r.retidos_agentic,0)/tG : null;
+    const cov = tA>0 ? tG/tA : null;
+    return { tA, ret, tG, retG, cov };
+  };
+
+  const pA = hasA ? calcPeriod(aStart, aEnd) : null;
+  const pB = hasB ? calcPeriod(bStart, bEnd) : null;
+  const diff = pA && pB && pA.ret !== null && pB.ret !== null
+    ? pB.ret - pA.ret : null;
+
+  const row = (label, p, labelColor, showDiff) => {
+    if (!p) return '';
+    const diffCell = showDiff && diff !== null
+      ? `<span class="badge ${diff>.01?'good':diff<-.01?'bad':'neutral'}">${diff>0?'+':''}${(diff*100).toFixed(1)}pp vs A</span>`
+      : `<span class="badge neutral">—</span>`;
+    return `<tr>
+      <td><strong style="color:${labelColor}">${label}</strong></td>
+      <td>${p.tA.toLocaleString('pt-BR')}</td>
+      <td>${p.ret!==null?pct(p.ret):'—'}</td>
+      <td>${p.tG.toLocaleString('pt-BR')}</td>
+      <td>${p.retG!==null?pct(p.retG):'—'}</td>
+      <td>${p.cov!==null?pct(p.cov):'—'}</td>
+      <td>${diffCell}</td>
+    </tr>`;
+  };
+
+  document.getElementById('periodTableBody').innerHTML =
+    row('Período A', pA, 'var(--muted)', false) +
+    row('Período B', pB, 'var(--accent)', true);
+}
+
+// ── AUDIT TABLE ───────────────────────────────────────────────────────────────
+function renderAuditTable() {
+  const section = document.getElementById('auditSection');
+  if (!currentClient) { section.style.display='none'; return; }
+  const start = document.getElementById('dateStart').value;
+  const end   = document.getElementById('dateEnd').value;
+  let tix = (ticketsData[currentClient]||[]).filter(t=>t.data>=start&&t.data<=end&&t.grupo.toLowerCase().startsWith('conversacional'));
+  section.style.display = 'block';
+
+  const total    = tix.length;
+  const n2count  = tix.filter(t=>t.n2).length;
+  document.getElementById('auditSubtitle').textContent =
+    `${total} tickets com AgenticResponse no período · ${n2count} escalados para N2 · ${total-n2count} retidos em N1`;
+
+  if (auditFilter==='n1') tix = tix.filter(t=>!t.n2);
+  if (auditFilter==='n2') tix = tix.filter(t=>t.n2);
+  document.getElementById('auditCount').textContent = `Exibindo ${tix.length} de ${total}`;
+
+  if (tix.length===0) {
+    document.getElementById('auditTableBody').innerHTML =
+      '<tr><td colspan="5" class="audit-empty">Nenhum ticket encontrado com os filtros selecionados.</td></tr>';
+    return;
+  }
+
+  document.getElementById('auditTableBody').innerHTML = tix.map(t => {
+    const hubCell = t.url
+      ? `<a href="${t.url}" target="_blank" class="hub-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Abrir no Hub</a>`
+      : `<span class="no-url">URL não mapeada</span>`;
+    return `<tr>
+      <td><span class="ticket-id">#${t.id}</span></td>
+      <td>${fmt(t.data)}</td>
+      <td><span style="font-size:10px;color:var(--muted)">${t.grupo||'—'}</span></td>
+      <td>${t.n2?'<span class="badge n2">N2</span>':`<span class="badge n1">N1</span>`}</td>
+      <td>${hubCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function initDashboard() {
+currentClient = 'sunne';
+sel.value = 'sunne';
+render();
+}
+</script>
+</body>
+</html>
