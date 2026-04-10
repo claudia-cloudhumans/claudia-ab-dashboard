@@ -419,7 +419,10 @@ select:focus, input[type=date]:focus {
 
 <header>
   <div class="header-inner">
-    <span>A/B Testing · Análise por cliente · AgenticResponse</span>
+    <span style="flex:1">A/B Testing · Análise por cliente · AgenticResponse</span>
+    <span id="updateStatus" style="font-size:11px;display:flex;align-items:center;gap:6px">
+      <span style="color:var(--muted)">Carregando...</span>
+    </span>
   </div>
 </header>
 
@@ -574,11 +577,48 @@ fetch('data.json')
     baseData     = d.baseData     || {};
     ticketsData  = d.ticketsData  || {};
     _dataReady   = true;
+    renderUpdateStatus(d._updated_at || null);
     initDashboard();
   })
   .catch(err => {
+    renderUpdateStatus(null, true);
     document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Poppins,sans-serif;color:#7a839e;flex-direction:column;gap:12px"><p style="font-size:14px">Não foi possível carregar os dados.</p><code style="font-size:11px;color:#f46262">' + err.message + '</code></div>';
   });
+
+/**
+ * Exibe o status da última atualização no header.
+ * Verde   = atualizado hoje (dentro das últimas 30h)
+ * Amarelo = atualizado ontem (30h – 48h)
+ * Vermelho = mais antigo ou falha de carregamento
+ */
+function renderUpdateStatus(isoStr, loadError) {
+  const el = document.getElementById('updateStatus');
+  if (!el) return;
+  if (loadError || !isoStr) {
+    el.innerHTML = `<span style="color:var(--danger)">⚠ Falha ao carregar dados</span>`;
+    return;
+  }
+  const ts   = new Date(isoStr);
+  const now  = new Date();
+  const diffH = (now - ts) / 36e5;   // horas desde a última atualização
+  const diffD = Math.floor(diffH / 24);
+
+  // Formatar horário local
+  const timeStr = ts.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', timeZoneName:'short' });
+
+  let dot, label;
+  if (diffH <= 30) {
+    dot   = 'var(--accent2)';
+    label = `<span style="color:var(--accent2)">✓ Dados atualizados hoje</span> <span style="color:var(--muted);font-size:10px">${timeStr}</span>`;
+  } else if (diffH <= 48) {
+    dot   = 'var(--warn)';
+    label = `<span style="color:var(--warn)">⚠ Dados de ontem</span> <span style="color:var(--muted);font-size:10px">${timeStr}</span>`;
+  } else {
+    dot   = 'var(--danger)';
+    label = `<span style="color:var(--danger)">✕ Dados desatualizados (há ${diffD} dias)</span> <span style="color:var(--muted);font-size:10px">${timeStr}</span>`;
+  }
+  el.innerHTML = label;
+}
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let currentClient = null;
