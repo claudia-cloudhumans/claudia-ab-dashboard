@@ -882,7 +882,7 @@ function renderAuditTable() {
   if (!currentClient) { section.style.display='none'; return; }
   const start = document.getElementById('dateStart').value;
   const end   = document.getElementById('dateEnd').value;
-  let tix = (ticketsData[currentClient]||[]).filter(t=>t.data>=start&&t.data<=end&&t.grupo.toLowerCase().startsWith('conversacional'));
+  let tix = (ticketsData[currentClient]||[]).filter(t=>t.data>=start&&t.data<=end&&t.grupo && t.grupo.toLowerCase().startsWith('conversacional'));
   section.style.display = 'block';
 
   const total    = tix.length;
